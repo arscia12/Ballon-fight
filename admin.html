@@ -96,7 +96,9 @@
         db.ref('global_wins').limitToLast(20).on('value', (s) => {
             const list = document.getElementById('win-list'); list.innerHTML = "";
             const data = []; s.forEach(c => { data.unshift(c.val()); });
-            data.forEach(i => { list.innerHTML += `<div style="background:#111; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; font-size:13px; border:1px solid #222;"><span>${i.msg}</span><span style="color:#444">${i.time}</span></div>`; });
+            data.forEach(i => { 
+                list.innerHTML += `<div style="background:#111; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; font-size:13px; border:1px solid #222;"><span>${i.msg}</span><span style="color:#444">${i.time}</span></div>`; 
+            });
         });
 
         function mod(type) {
@@ -114,9 +116,8 @@
             const u = document.getElementById('fake-uid').value || "SYSTEM", p = document.getElementById('fake-prize').value || "0K";
             let masked = u.length > 4 ? u.substring(0, 2) + "****" + u.slice(-2) : u.substring(0, 1) + "**";
             
-            // EXACT SAME FORMAT AS REAL WINS
             db.ref('global_wins').push({ 
-                msg: `<b>${masked}</b> won <span style="color:#2ecc71">${p}</span>`, 
+                msg: `<b>${masked}</b> won <span style="color:#f1c40f">${p}</span>`, 
                 time: new Date().toLocaleTimeString() 
             });
             alert("Sent!");
