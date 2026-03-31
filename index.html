@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Balloon Fight - FILAGAMING</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --gold: #f1c40f; --bg-dark: #08080a; }
+        body { background: radial-gradient(circle at center, #111122 0%, var(--bg-dark) 100%); color: #fff; font-family: 'Orbitron', sans-serif; overflow: hidden; margin: 0; height: 100vh; user-select: none; }
+        #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 2000; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: #15151a; padding: 40px; border-radius: 20px; border: 1px solid #333; text-align: center; width: 320px; }
+        .login-box input { width: 100%; padding: 12px; margin: 20px 0; background: #000; border: 1px solid #444; color: gold; border-radius: 8px; text-align: center; font-family: 'Orbitron'; outline: none; }
+        .login-box button { width: 100%; padding: 12px; background: gold; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-family: 'Orbitron'; }
+        .hud { position: absolute; top: 30px; width: 100%; display: flex; justify-content: space-around; z-index: 100; }
+        .glass-card { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 15px 30px; border-radius: 15px; text-align: center; min-width: 140px; }
+        .prize-text { color: var(--gold); font-size: 22px; font-weight: bold; }
+        .activity-feed { position: absolute; bottom: 20px; right: 20px; width: 280px; background: rgba(0,0,0,0.7); border: 1px solid #333; border-radius: 10px; padding: 15px; z-index: 100; }
+        #global-list { list-style: none; padding: 0; margin: 0; font-size: 12px; color: #eee; }
+        .feed-item { padding: 8px 0; border-bottom: 1px solid #222; }
+        .balloon-grid { display: grid; grid-template-columns: repeat(3, 160px); grid-gap: 50px; padding-top: 150px; justify-content: center; }
+        .balloon { width: 110px; height: 145px; border-radius: 50% 50% 50% 50% / 45% 45% 55% 55%; cursor: pointer; position: relative; box-shadow: inset -15px -15px 30px rgba(0,0,0,0.6); animation: float 6s infinite ease-in-out; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    </style>
+</head>
+<body>
+
+    <div id="login-overlay">
+        <div class="login-box">
+            <h2 style="color: gold; font-size: 18px;">MEMBER LOGIN</h2>
+            <input type="text" id="login-id" placeholder="MEMBER ID">
+            <button onclick="loginUser()">START PLAYING</button>
+        </div>
+    </div>
+
+    <div class="hud">
+        <div class="glass-card"><span style="font-size:10px; color:#888;">MEMBER</span><div id="user-display" class="prize-text">--</div></div>
+        <div class="glass-card"><span style="font-size:10px; color:#888;">BALANCE</span><div id="balance" class="prize-text">0K</div></div>
+        <div class="glass-card"><span style="font-size:10px; color:#888;">LAST WIN</span><div id="last-win" class="prize-text">--</div></div>
+    </div>
+
+    <div class="balloon-grid" id="balloon-container"></div>
+
+    <div class="activity-feed">
+        <h3 style="font-family:'Orbitron'; font-size:10px; color:gold; margin:0 0 10px 0;">LIVE WINS</h3>
+        <ul id="global-list"></ul>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDs0_sSpYenn-keMdcTGoxado8HvW5kqNE",
+            authDomain: "filagaming-chat.firebaseapp.com",
+            databaseURL: "https://filagaming-chat-default-rtdb.firebaseio.com",
+            projectId: "filagaming-chat",
+            storageBucket: "filagaming-chat.firebasestorage.app",
+            messagingSenderId: "32512501603",
+            appId: "1:32512501603:web:31c2a61c06040d1e5ad556"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let currentUserId = sessionStorage.getItem('activeUser');
+
+        function loginUser() {
+            const id = document.getElementById('login-id').value.trim().toUpperCase();
+            if(!id) return;
+            sessionStorage.setItem('activeUser', id);
+            db.ref('last_active').set({ id: id, time: Date.now() });
+            location.reload();
+        }
+
+        if(currentUserId) {
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('user-display').innerText = currentUserId;
+            
+            // Listen for balance
+            db.ref('users/' + currentUserId + '/balance').on('value', (s) => {
+                document.getElementById('balance').innerText = (s.val() || 0) + "K";
+            });
+
+            // Listen for Global Wins
+            db.ref('global_wins').limitToLast(5).on('value', (s) => {
+                const list = document.getElementById('global-list');
+                list.innerHTML = "";
+                const data = [];
+                s.forEach(c => { data.unshift(c.val()); });
+                data.forEach(i => { list.innerHTML += `<li class="feed-item">${i.msg}</li>`; });
+            });
+
+            initGame();
+        }
+
+        function initGame() {
+            const colors = ['#ff4d4d', '#4da3ff', '#ffd64d', '#4dff88', '#d64dff', '#ff944d'];
+            const container = document.getElementById('balloon-container');
+            colors.forEach(c => {
+                const b = document.createElement('div');
+                b.className = 'balloon';
+                b.style.background = `radial-gradient(circle at 30% 30%, ${c}, #000)`;
+                b.onclick = () => popBalloon(b);
+                container.appendChild(b);
+            });
+        }
+
+        function popBalloon(el) {
+            db.ref('users/' + currentUserId + '/balance').once('value').then(s => {
+                let bal = s.val() || 0;
+                if(bal < 5) return alert("Low Balance!");
+                
+                db.ref('users/' + currentUserId).update({ balance: bal - 5 });
+                el.style.opacity = "0";
+
+                const prizes = [{n:"ZONK",w:40},{n:"5K",w:30},{n:"10K",w:15},{n:"25K",w:10},{n:"50K",w:4},{n:"100K",w:1}];
+                let rand = Math.random() * 100, sum = 0, res = "ZONK";
+                for(let p of prizes) { sum += p.w; if(rand <= sum) { res = p.n; break; } }
+                
+                document.getElementById('last-win').innerText = res;
+                db.ref('global_wins').push({
+                    msg: `<b>${currentUserId}</b> got <b>${res}</b>`,
+                    time: new Date().toLocaleTimeString()
+                });
+
+                setTimeout(() => { el.style.opacity = "1"; }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

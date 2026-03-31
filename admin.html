@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin - FILAGAMING Control</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+    <style>
+        :root { --gold: #f1c40f; --bg-dark: #08080a; --card-bg: #15151a; --sidebar-w: 240px; }
+        body { background: var(--bg-dark); color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: var(--sidebar-w); background: #000; border-right: 1px solid #222; display: flex; flex-direction: column; padding: 20px 0; }
+        .sidebar-brand { font-family: 'Orbitron'; color: var(--gold); text-align: center; font-size: 18px; margin-bottom: 40px; letter-spacing: 2px; }
+        .nav-item { padding: 15px 25px; cursor: pointer; color: #888; font-family: 'Orbitron'; font-size: 12px; transition: 0.3s; }
+        .nav-item:hover { color: var(--gold); background: rgba(241, 196, 15, 0.05); }
+        .nav-item.active { color: var(--gold); border-left: 3px solid var(--gold); background: rgba(241, 196, 15, 0.1); }
+        .main-content { flex: 1; padding: 40px; overflow-y: auto; }
+        .page { display: none; max-width: 900px; margin: 0 auto; animation: fadeIn 0.3s ease-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card { background: var(--card-bg); padding: 30px; border-radius: 15px; border: 1px solid #333; margin-bottom: 20px; }
+        h2 { font-family: 'Orbitron'; font-size: 16px; color: var(--gold); margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .monitor { background: #000; padding: 15px; border-radius: 8px; margin-bottom: 25px; border: 1px dashed #444; text-align: center; }
+        .monitor span { color: #2ecc71; font-family: 'Orbitron'; font-size: 20px; text-shadow: 0 0 10px #2ecc71; }
+        input { width: 100%; padding: 14px; margin-bottom: 15px; background: #000; border: 1px solid #444; color: var(--gold); border-radius: 5px; font-family: 'Orbitron'; text-align: center; outline: none; box-sizing: border-box; }
+        button { width: 100%; padding: 15px; cursor: pointer; border: none; font-weight: bold; border-radius: 5px; font-family: 'Orbitron'; font-size: 12px; margin-bottom: 10px; }
+        .btn-set { background: var(--gold); color: black; }
+        .btn-fake { background: #e74c3c; color: white; }
+        table { width: 100%; border-collapse: collapse; background: #111; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
+        .td-name { color: var(--gold); font-family: 'Orbitron'; }
+        .log-item { background: #111; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="sidebar-brand">FILAGAMING</div>
+        <div class="nav-item active" onclick="showPage('dashboard', this)">DASHBOARD</div>
+        <div class="nav-item" onclick="showPage('member-balances', this)">MEMBER BALANCES</div>
+        <div class="nav-item" onclick="showPage('fake-win', this)">FAKE BROADCAST</div>
+        <div class="nav-item" onclick="showPage('win-logs', this)">GLOBAL WIN LOG</div>
+    </div>
+
+    <div class="main-content">
+        <div id="dashboard" class="page active">
+            <h2>Balance Manager</h2>
+            <div class="card" style="max-width: 450px;">
+                <div class="monitor"><label style="font-size:9px; color:#666; display:block; margin-bottom:5px;">LAST ACTIVE MEMBER</label><span id="active-display">OFFLINE</span></div>
+                <input type="text" id="uid" placeholder="MEMBER ID">
+                <input type="number" id="amt" placeholder="AMOUNT (K)">
+                <button class="btn-set" onclick="mod('set')">SET BALANCE</button>
+                <button class="btn-set" style="background:#27ae60; color:white;" onclick="mod('add')">TOP UP (+)</button>
+                <p id="msg" style="text-align:center; color:gold; font-size:12px;"></p>
+            </div>
+        </div>
+
+        <div id="member-balances" class="page">
+            <h2>All Member Balances</h2>
+            <div class="card">
+                <table>
+                    <thead><tr><th>MEMBER ID</th><th>BALANCE</th></tr></thead>
+                    <tbody id="balance-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="fake-win" class="page">
+            <h2>Broadcast Fake Win</h2>
+            <div class="card" style="max-width: 450px;">
+                <input type="text" id="fake-uid" placeholder="FAKE USERNAME">
+                <input type="text" id="fake-prize" placeholder="PRIZE (e.g. 500K)">
+                <button class="btn-fake" onclick="broadcastFakeWin()">SEND TO LIVE FEED</button>
+            </div>
+        </div>
+
+        <div id="win-logs" class="page">
+            <h2>Global Win Log</h2>
+            <div id="win-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyDs0_sSpYenn-keMdcTGoxado8HvW5kqNE",
+            authDomain: "filagaming-chat.firebaseapp.com",
+            databaseURL: "https://filagaming-chat-default-rtdb.firebaseio.com",
+            projectId: "filagaming-chat",
+            storageBucket: "filagaming-chat.firebasestorage.app",
+            messagingSenderId: "32512501603",
+            appId: "1:32512501603:web:31c2a61c06040d1e5ad556"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function showPage(p, el) {
+            document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(x => x.classList.remove('active'));
+            document.getElementById(p).classList.add('active');
+            el.classList.add('active');
+        }
+
+        // Listen for last active
+        db.ref('last_active').on('value', (s) => {
+            if(s.exists()) {
+                document.getElementById('active-display').innerText = s.val().id;
+                document.getElementById('uid').value = s.val().id;
+            }
+        });
+
+        // Load Balance Table
+        db.ref('users').on('value', (s) => {
+            const tbody = document.getElementById('balance-table-body');
+            tbody.innerHTML = "";
+            s.forEach((child) => {
+                tbody.innerHTML += `<tr><td class="td-name">${child.key}</td><td style="color:#2ecc71; font-weight:bold;">${child.val().balance}K</td></tr>`;
+            });
+        });
+
+        // Load Win Logs
+        db.ref('global_wins').limitToLast(20).on('value', (s) => {
+            const list = document.getElementById('win-list');
+            list.innerHTML = "";
+            const data = [];
+            s.forEach(c => { data.unshift(c.val()); });
+            data.forEach(item => {
+                list.innerHTML += `<div class="log-item"><span>${item.msg}</span><span style="color:#444">${item.time}</span></div>`;
+            });
+        });
+
+        function mod(type) {
+            const id = document.getElementById('uid').value.toUpperCase().trim();
+            const val = parseFloat(document.getElementById('amt').value) || 0;
+            if(!id) return;
+            const ref = db.ref('users/' + id);
+            ref.once('value').then(s => {
+                let cur = s.exists() ? s.val().balance : 0;
+                let fin = (type === 'set') ? val : cur + val;
+                ref.update({ balance: fin });
+                document.getElementById('msg').innerText = `UPDATED: ${id} to ${fin}K`;
+                document.getElementById('amt').value = "";
+            });
+        }
+
+        function broadcastFakeWin() {
+            const u = document.getElementById('fake-uid').value || "SYSTEM";
+            const p = document.getElementById('fake-prize').value || "0K";
+            db.ref('global_wins').push({
+                msg: `<b>${u}</b> won <span style="color:#2ecc71">${p}</span>`,
+                time: new Date().toLocaleTimeString()
+            });
+            alert("Broadcast Sent!");
+        }
+    </script>
+</body>
+</html>
