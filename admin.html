@@ -146,7 +146,7 @@
             const u = document.getElementById('fake-uid').value || "SYSTEM";
             const p = document.getElementById('fake-prize').value || "0K";
             db.ref('global_wins').push({
-                msg: `<b>${u}</b> won <span style="color:#2ecc71">${p}</span>`,
+                msg: `<b>${u}</b> won <span style="color:#FFFFFF">${p}</span>`,
                 time: new Date().toLocaleTimeString()
             });
             alert("Broadcast Sent!");
