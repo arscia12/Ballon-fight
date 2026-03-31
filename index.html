@@ -118,13 +118,14 @@
             
             document.getElementById('last-win').innerText = res;
 
+            // Create the masked ID for the public Live Wins
             let masked = currentUserId.length > 4 ? 
                 currentUserId.substring(0, 2) + "****" + currentUserId.slice(-2) : 
                 currentUserId.substring(0, 1) + "**";
 
-            // Push to Firebase (Includes realId for Admin Log)
+            // SAVE DATA: We send the full name (currentUserId) to the 'MemberName' field
             db.ref('global_wins').push({ 
-                realId: currentUserId,
+                MemberName: currentUserId, 
                 msg: `<b>${masked}</b> won <span style="color:#f1c40f">${res}</span>`, 
                 prize: res,
                 time: new Date().toLocaleTimeString() 

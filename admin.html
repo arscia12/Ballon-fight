@@ -99,10 +99,12 @@
             const list = document.getElementById('win-list'); list.innerHTML = "";
             const data = []; s.forEach(c => { data.unshift(c.val()); });
             data.forEach(i => { 
-                let displayName = i.realId ? i.realId : "SYSTEM";
+                // Use the new MemberName field for full readability
+                let fullId = i.MemberName ? i.MemberName : "Check Live Feed";
+                
                 list.innerHTML += `
                     <div style="background:#111; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; font-size:13px; border:1px solid #222;">
-                        <span>Member: <b style="color:gold">${displayName}</b> won <b style="color:#f1c40f">${i.prize || '---'}</b></span>
+                        <span>Member: <b style="color:#f1c40f">${fullId}</b> | Prize: <b style="color:#2ecc71">${i.prize || '---'}</b></span>
                         <span style="color:#444">${i.time}</span>
                     </div>`; 
             });
@@ -124,7 +126,7 @@
             let masked = u.length > 4 ? u.substring(0, 2) + "****" + u.slice(-2) : u.substring(0, 1) + "**";
             
             db.ref('global_wins').push({ 
-                realId: u + " (FAKE)",
+                MemberName: u + " (FAKE)",
                 msg: `<b>${masked}</b> won <span style="color:#f1c40f">${p}</span>`, 
                 prize: p,
                 time: new Date().toLocaleTimeString() 
