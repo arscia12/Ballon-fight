@@ -25,11 +25,10 @@
         button { width: 100%; padding: 15px; cursor: pointer; border: none; font-weight: bold; border-radius: 5px; font-family: 'Orbitron'; font-size: 12px; margin-bottom: 10px; }
         .btn-set { background: var(--gold); color: black; }
         .btn-fake { background: #e74c3c; color: white; }
-        .btn-clear { background: none; border: 1px solid #444; color: #666; width: auto; padding: 8px 15px; margin-bottom: 15px; float: right; }
+        .btn-clear { background: none; border: 1px solid #444; color: #666; width: auto; padding: 8px 15px; margin-bottom: 15px; float: right; cursor: pointer; }
         .btn-clear:hover { border-color: #e74c3c; color: #e74c3c; }
         table { width: 100%; border-collapse: collapse; background: #111; border-radius: 8px; }
         th, td { padding: 15px; text-align: left; border-bottom: 1px solid #222; }
-        .log-item { background: #111; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; font-size: 13px; border: 1px solid #222; }
     </style>
 </head>
 <body>
@@ -97,7 +96,7 @@
         db.ref('global_wins').limitToLast(20).on('value', (s) => {
             const list = document.getElementById('win-list'); list.innerHTML = "";
             const data = []; s.forEach(c => { data.unshift(c.val()); });
-            data.forEach(i => { list.innerHTML += `<div class="log-item"><span>${i.msg}</span><span style="color:#444">${i.time}</span></div>`; });
+            data.forEach(i => { list.innerHTML += `<div style="background:#111; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; font-size:13px; border:1px solid #222;"><span>${i.msg}</span><span style="color:#444">${i.time}</span></div>`; });
         });
 
         function mod(type) {
@@ -113,8 +112,16 @@
 
         function broadcastFakeWin() {
             const u = document.getElementById('fake-uid').value || "SYSTEM", p = document.getElementById('fake-prize').value || "0K";
-            db.ref('global_wins').push({ msg: `<b>${u}</b> won <span style="color:#2ecc71">${p}</span>`, time: new Date().toLocaleTimeString() });
+            let masked = u.length > 4 ? u.substring(0, 2) + "****" + u.slice(-2) : u.substring(0, 1) + "**";
+            
+            // EXACT SAME FORMAT AS REAL WINS
+            db.ref('global_wins').push({ 
+                msg: `<b>${masked}</b> won <span style="color:#FFFFFF">${p}</span>`, 
+                time: new Date().toLocaleTimeString() 
+            });
             alert("Sent!");
+            document.getElementById('fake-uid').value = "";
+            document.getElementById('fake-prize').value = "";
         }
 
         function clearFirebaseData(path) {

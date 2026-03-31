@@ -110,11 +110,30 @@
         function triggerPop(el) {
             el.style.opacity = "0";
             document.getElementById('flash').animate([{ opacity: 0.4 }, { opacity: 0 }], { duration: 150 });
-            const prizes = [{n:"ZONK",w:40},{n:"5K",w:30},{n:"10K",w:15},{n:"25K",w:10},{n:"50K",w:4},{n:"100K",w:1}];
+            
+            const prizes = [{n:"ZONK",w:50},{n:"5K",w:40},{n:"10K",w:9},{n:"25K",w:1},{n:"50K",w:0},{n:"100K",w:0}];
             let rand = Math.random() * 100, sum = 0, res = "ZONK";
             for(let p of prizes) { sum += p.w; if(rand <= sum) { res = p.n; break; } }
+            
             document.getElementById('last-win').innerText = res;
-            db.ref('global_wins').push({ msg: `<b>${currentUserId}</b> got <b>${res}</b>`, time: new Date().toLocaleTimeString() });
+
+            // MASKING LOGIC
+            let masked = currentUserId.length > 4 ? 
+                currentUserId.substring(0, 2) + "****" + currentUserId.slice(-2) : 
+                currentUserId.substring(0, 1) + "**";
+
+            // Push to Global Feed (Matches Fake Broadcast Style)
+            db.ref('global_wins').push({ 
+                msg: `<b>${masked}</b> won <span style="color:#2ecc71">${res}</span>`, 
+                time: new Date().toLocaleTimeString() 
+            });
+
+            // Update Real Balance if Won
+            if(res !== "ZONK") {
+                let winAmt = parseInt(res.replace("K", ""));
+                db.ref('users/' + currentUserId + '/balance').transaction((curr) => (curr || 0) + winAmt);
+            }
+
             setTimeout(() => { el.style.opacity = "1"; }, 2000);
         }
     </script>
