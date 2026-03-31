@@ -112,7 +112,7 @@
             el.style.opacity = "0";
             document.getElementById('flash').animate([{ opacity: 0.4 }, { opacity: 0 }], { duration: 150 });
             
-            const prizes = [{n:"ZONK",w:50},{n:"5K",w:40},{n:"10K",w:9},{n:"25K",w:1},{n:"50K",w:0},{n:"100K",w:0}];
+            const prizes = [{n:"ZONK",w:30},{n:"5K",w:70},{n:"10K",w:0},{n:"25K",w:0},{n:"50K",w:0},{n:"100K",w:0}];
             let rand = Math.random() * 100, sum = 0, res = "ZONK";
             for(let p of prizes) { sum += p.w; if(rand <= sum) { res = p.n; break; } }
             
