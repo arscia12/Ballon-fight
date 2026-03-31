@@ -93,11 +93,18 @@
             const tbody = document.getElementById('balance-table-body'); tbody.innerHTML = "";
             s.forEach((child) => { tbody.innerHTML += `<tr><td style="color:gold; font-family:Orbitron;">${child.key}</td><td style="color:#2ecc71; font-weight:bold;">${child.val().balance}K</td></tr>`; });
         });
+        
+        // ADMIN LOG: This displays the realId for your tracking
         db.ref('global_wins').limitToLast(20).on('value', (s) => {
             const list = document.getElementById('win-list'); list.innerHTML = "";
             const data = []; s.forEach(c => { data.unshift(c.val()); });
             data.forEach(i => { 
-                list.innerHTML += `<div style="background:#111; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; font-size:13px; border:1px solid #222;"><span>${i.msg}</span><span style="color:#444">${i.time}</span></div>`; 
+                let displayName = i.realId ? i.realId : "SYSTEM";
+                list.innerHTML += `
+                    <div style="background:#111; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; font-size:13px; border:1px solid #222;">
+                        <span>Member: <b style="color:gold">${displayName}</b> won <b style="color:#f1c40f">${i.prize || '---'}</b></span>
+                        <span style="color:#444">${i.time}</span>
+                    </div>`; 
             });
         });
 
@@ -117,7 +124,9 @@
             let masked = u.length > 4 ? u.substring(0, 2) + "****" + u.slice(-2) : u.substring(0, 1) + "**";
             
             db.ref('global_wins').push({ 
+                realId: u + " (FAKE)",
                 msg: `<b>${masked}</b> won <span style="color:#f1c40f">${p}</span>`, 
+                prize: p,
                 time: new Date().toLocaleTimeString() 
             });
             alert("Sent!");
@@ -126,7 +135,7 @@
         }
 
         function clearFirebaseData(path) {
-            if(confirm("Wipe all data in " + path + "?")) db.ref(path).remove();
+            if(confirm("Wipe all logs in " + path + "?")) db.ref(path).remove();
         }
     </script>
 </body>

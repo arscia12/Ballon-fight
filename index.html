@@ -89,8 +89,6 @@
             db.ref('users/' + currentUserId + '/balance').once('value').then(s => {
                 let bal = s.val() || 0;
                 if(bal < 5) return alert("Balance is not enough!");
-                
-                // Balance decreases by 5K per throw
                 db.ref('users/' + currentUserId).update({ balance: bal - 5 });
                 
                 const rect = target.getBoundingClientRect();
@@ -124,14 +122,13 @@
                 currentUserId.substring(0, 2) + "****" + currentUserId.slice(-2) : 
                 currentUserId.substring(0, 1) + "**";
 
-            // Push to Live Wins feed with Gold color
+            // Push to Firebase (Includes realId for Admin Log)
             db.ref('global_wins').push({ 
+                realId: currentUserId,
                 msg: `<b>${masked}</b> won <span style="color:#f1c40f">${res}</span>`, 
+                prize: res,
                 time: new Date().toLocaleTimeString() 
             });
-
-            // FIXED: BALANCE NO LONGER INCREASES AUTOMATICALLY HERE.
-            // Members must see Admin to top up if they run out.
 
             setTimeout(() => { el.style.opacity = "1"; }, 2000);
         }
